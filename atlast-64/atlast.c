@@ -45,10 +45,12 @@
 #define DOUBLE                        /* Double word primitives (2DUP) */
 #define EVALUATE                      /* The EVALUATE primitive */
 #define FILEIO                        /* File I/O primitives */
+/*#define LOCALS */                        /* Local vars/arguments */
 #define MATH                          /* Math functions */
 #define MEMMESSAGE                    /* Print message for stack/heap errors */
 #define PROLOGUE                      /* Prologue processing and auto-init */
 #define REAL                          /* Floating point numbers */
+#define RSTACKMANIP                   /* F83 rstack manipulation primitives (RP@ RP!) */
 #define SHORTCUTA                     /* Shortcut integer arithmetic words */
 #define SHORTCUTC                     /* Shortcut integer comparison */
 #define STRING                        /* String functions */
@@ -137,6 +139,12 @@ Exported dictword ***rstack = NULL;   /* Return stack */
 Exported dictword ***rstk;            /* Return stack pointer */
 Exported dictword ***rstackbot;       /* Return stack bottom */
 Exported dictword ***rstacktop;       /* Return stack top */
+
+    /* locals frame pointers */
+#ifdef LOCALS
+static dictword ***lframe = NULL;     /* local variable frame */
+static dictword ***aframe = NULL;     /* argument frame */
+#endif
 
     /* The heap */
 
@@ -1658,6 +1666,56 @@ prim P_fload()                        /* Load source file:  fd -- evalstat */
 }
 #endif /* FILEIO */
 
+#ifdef LOCALS
+prim P_args()
+{
+	rstackitem nextw;
+	stackitem argc, i;
+
+	Sl(1);
+	nextw = R0;
+	Rpop;
+	Rpush = aframe;
+	aframe = rstack;
+	argc = S0;
+	Pop;
+	for (i = 0; i < argc; i++) {
+		Rpush = (rstackitem)S0;
+		Pop;
+	}
+	Rpush = nextw;
+	aframe = rstack;
+}
+#endif /* LOCALS */
+
+#ifdef RSTACKMANIP
+
+prim P_rpat()
+{
+	So(1);
+	Push = rstk - rstack;
+}
+
+prim P_rpstore()
+{
+	Sl(1);
+	if (rstack + S0 > rstacktop) {
+		rstakover(); return Memerrs;
+	}
+	rstk = rstack + S0;
+	Pop;
+}
+
+prim P_rpatat()
+{
+	Sl(1);
+	Rso(S0);
+	S0 = (stackitem) rstack[S0];
+}
+
+#endif /* RSTACKMANIP */
+
+
 #ifdef EVALUATE
 
 prim P_evaluate()
@@ -2950,6 +3008,12 @@ static struct primfcn primt[] = {
     {"0FSEEK", P_fseek},
     {"0FLOAD", P_fload},
 #endif /* FILEIO */
+
+#ifdef RSTACKMANIP
+    {"0RP@", P_rpat},
+    {"0RP!", P_rpstore},
+    {"0RP@@", P_rpatat},
+#endif /* RSTACKMANIP */
 
 #ifdef EVALUATE
     {"0EVALUATE", P_evaluate},

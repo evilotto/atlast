@@ -1,0 +1,27 @@
+variable 'aframe
+: call >r ;
+: args r> 'aframe @ >R
+  rp@ 'aframe ! swap begin
+    rot
+	>r 1- ?dup 0= until
+  'aframe @ >r 
+  rp@ 'aframe !
+  call 
+  r> rp!
+  r> 'aframe !
+  ;
+: argv 'aframe @ 1- swap - ;
+: % argv rp@@ ;
+: argument create c, does> c@ % ;
+1 argument %1
+2 argument %2
+3 argument %3
+ 
+\ test
+: b 2 args ." "b:" %1 . ;
+: a 3 args ." " l1 = " %1 .
+  ." "l2 = " %2 .
+  ." " sum = " %1 %2 + .
+  %3 0 b ;
+
+10 3 6 a cr
